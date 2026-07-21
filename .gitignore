@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# ローカルデモモード（PGlite DB・アップロード画像）
+/.miela-demo
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
