@@ -1,11 +1,18 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 
 const PROTECTED_PREFIXES = ["/dashboard", "/orders"];
 
 export async function middleware(request: NextRequest) {
   // デモモードは認証を行わず素通しする
   if (process.env.MIELA_DEMO === "1") {
+    return NextResponse.next({ request });
+  }
+
+  // Supabase 未設定（デプロイ直後で環境変数が未登録など）は素通し。
+  // 保護ページ側で「セットアップ未完了」の案内にフォールバックする。
+  if (!isSupabaseConfigured()) {
     return NextResponse.next({ request });
   }
 

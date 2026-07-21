@@ -136,8 +136,58 @@ tests/core-flow.test.ts # コアフロー integration テスト
 決済・通知（メール/LINE）・複数店舗/スタッフ管理・客側アカウント・自由描画等の
 高度なエディタ機能は実装していません。
 
-## デプロイ（Vercel 想定）
+## デプロイ（Vercel）
 
-1. リポジトリを Vercel にインポート
-2. 環境変数（上記5つ）を設定。`NEXT_PUBLIC_APP_URL` は本番URLに
-3. デプロイ後、Supabase の **Authentication → URL Configuration** に本番URLを追加
+現在の公開先: **https://miela-one.vercel.app**
+
+Supabase の環境変数を設定するまでは、トップページ以外は
+「準備中（`/setup`）」の案内にフォールバックします（500 にはなりません）。
+本番を機能させる手順:
+
+### 1. Supabase プロジェクト作成（要ブラウザ操作）
+
+上記「セットアップ 2」を実施し、URL / anon key / service_role key / 接続文字列を控える。
+
+### 2. マイグレーションと RLS の適用
+
+手元に本番の `DATABASE_URL` を入れて実行:
+
+```bash
+# .env.local の DATABASE_URL を本番Supabaseの接続文字列にして
+npm run db:migrate
+```
+
+その後 Supabase の **SQL Editor** で [`supabase/rls.sql`](supabase/rls.sql) を実行
+（RLS ポリシー + Storage バケット `order-images` / `mocks` を作成）。
+
+### 3. Vercel に環境変数を設定
+
+**Project → Settings → Environment Variables** に5つを登録:
+
+| 変数 | 値 |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | anon キー |
+| `SUPABASE_SERVICE_ROLE_KEY` | service_role キー |
+| `DATABASE_URL` | 接続文字列（serverless では **Transaction pooler / 6543** 推奨） |
+| `NEXT_PUBLIC_APP_URL` | `https://miela-one.vercel.app`（独自ドメイン取得後はそちら） |
+
+> ⚠️ `NEXT_PUBLIC_*` はビルド時に埋め込まれるため、
+> **設定後に必ず再デプロイ**（Deployments → Redeploy）が必要です。
+
+> ⚠️ `MIELA_DEMO` は **設定しないこと**。ローカル専用のデモDB（インメモリ）で、
+> serverless では状態が保持されず機能しません。
+
+### 4. Supabase 側の仕上げ
+
+- **Authentication → URL Configuration** に本番URLを追加
+- 独自ドメイン（例: `miela.app`）取得後は Vercel の **Domains** に追加し、
+  `NEXT_PUBLIC_APP_URL` を更新して再デプロイ
+
+### コスト（無料枠の目安）
+
+| サービス | 無料枠 | 注意 |
+| --- | --- | --- |
+| Vercel Hobby | 無料 | 非商用・個人利用が前提（商用は Pro / $20/月） |
+| Supabase Free | 無料 | 7日間アクセスが無いとプロジェクトが自動停止 |
+| ドメイン | 有料 | `miela.app` は年 $14〜20 程度（任意） |

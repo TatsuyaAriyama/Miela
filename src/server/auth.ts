@@ -5,6 +5,7 @@ import type { User } from "@supabase/supabase-js";
 import { getDb, type Db } from "@/db";
 import type { Maker } from "@/db/schema";
 import { DEMO_MAKER, IS_DEMO } from "@/lib/demo";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ensureDemoReady } from "./demo-db";
 import { ensureMaker, getMaker } from "./flows";
@@ -30,6 +31,9 @@ export async function requireMaker(): Promise<MakerSession> {
     const user = { id: DEMO_MAKER.id, email: "demo@miela.local" } as User;
     return { user, maker, db };
   }
+
+  // Supabase 未設定なら 500 を出さず、セットアップ案内ページへ
+  if (!isSupabaseConfigured()) redirect("/setup");
 
   const supabase = await createSupabaseServerClient();
   const {

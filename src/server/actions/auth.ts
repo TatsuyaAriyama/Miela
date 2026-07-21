@@ -2,11 +2,15 @@
 
 import { redirect } from "next/navigation";
 import { getDb } from "@/db";
+import { isSupabaseConfigured } from "@/lib/supabase/config";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { loginSchema, signupSchema } from "@/lib/validation";
 import { ensureMaker } from "@/server/flows";
 
 export type AuthFormState = { error?: string; message?: string };
+
+const SETUP_INCOMPLETE_MESSAGE =
+  "サーバーのセットアップが未完了です（Supabaseの環境変数が未設定）。";
 
 export async function loginAction(
   _prev: AuthFormState,
@@ -19,6 +23,7 @@ export async function loginAction(
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "入力内容を確認してください" };
   }
+  if (!isSupabaseConfigured()) return { error: SETUP_INCOMPLETE_MESSAGE };
   const supabase = await createSupabaseServerClient();
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
   if (error) {
@@ -42,6 +47,7 @@ export async function signupAction(
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "入力内容を確認してください" };
   }
+  if (!isSupabaseConfigured()) return { error: SETUP_INCOMPLETE_MESSAGE };
   const { email, password, shopName, displayName, snsUrl } = parsed.data;
 
   const supabase = await createSupabaseServerClient();
